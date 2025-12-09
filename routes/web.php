@@ -9,12 +9,12 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\QuizAttemptController;
 use App\Http\Controllers\JoinQuizController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\AcademicVerificationController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
-use App\Http\Controllers\PaymentController; 
 
-
-// Halaman Depan
 Route::get('/', function () {
     $popularQuizzes = Quiz::with('user')
         ->withCount('attempts')
@@ -27,19 +27,29 @@ Route::get('/', function () {
     ]);
 });
 
-// Group Middleware
+Route::get('auth/google', [SocialAuthController::class, 'redirect'])->name('google.login');
+Route::get('auth/google/callback', [SocialAuthController::class, 'callback'])->name('google.callback');
+
+Route::post('/payment/callback', [PaymentController::class, 'callback'])->name('payment.callback');
+
+Route::get('/join', [JoinQuizController::class, 'create'])->name('quizzes.join');
+Route::post('/join', [JoinQuizController::class, 'store'])->name('quizzes.join.store');
+Route::get('/join-quiz', [JoinQuizController::class, 'create'])->name('quizzes.join.show');
+
+Route::get('/quizzes/{quiz}/start', [QuizAttemptController::class, 'start'])->name('quizzes.start');
+Route::post('/quizzes/{quiz}/retake', [QuizAttemptController::class, 'retake'])->name('quizzes.retake'); // Route Baru
+Route::get('/quizzes/{quiz}/attempt/{attempt}', [QuizAttemptController::class, 'show'])->name('quizzes.attempt');
+Route::post('/quizzes/{quiz}/attempt/{attempt}/submit', [QuizAttemptController::class, 'submit'])->name('quizzes.submit');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     
-    // Dashboard Utama 
     Route::get('/dashboard', function () {
-        // Redirect Admin ke Dashboard Admin
         if (auth()->user()->role === 'admin') {
             return redirect()->route('admin.dashboard');
         }
         
         $user = Auth::user();
         
-        // Data Statistik untuk User Dashboard
         $totalKuis = Quiz::count();
         $kuisDikerjakan = QuizAttempt::where('user_id', $user->id)->distinct('quiz_id')->count();
         $rataRataSkor = QuizAttempt::where('user_id', $user->id)->avg('score') ?? 0;
@@ -53,43 +63,42 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     })->name('dashboard');
 
-    // Route Khusus Admin
+    Route::get('/pricing', function () {
+        return view('pricing.index');
+    })->name('pricing.index');
+
+    Route::get('/academic/verify', [AcademicVerificationController::class, 'create'])->name('academic.verify');
+    Route::post('/academic/verify', [AcademicVerificationController::class, 'store'])->name('academic.store');
+
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
         Route::resource('quizzes', AdminQuizController::class);
         Route::resource('users', AdminUserController::class);
+
+        Route::get('/verifications', [AcademicVerificationController::class, 'index'])->name('verifications.index');
+        Route::get('/verifications/{verification}/document', [AcademicVerificationController::class, 'showDocument'])->name('verifications.document');
+        Route::post('/verifications/{verification}/approve', [AcademicVerificationController::class, 'approve'])->name('verifications.approve');
+        Route::post('/verifications/{verification}/reject', [AcademicVerificationController::class, 'reject'])->name('verifications.reject');
     });
 
-    // Route Khusus User Biasa
-    Route::middleware(['role:user'])->group(function () {
+    Route::middleware(['role:user,pro,premium,academic'])->group(function () {
         Route::resource('quizzes', QuizController::class);
+        Route::post('/quizzes/{quiz}/duplicate', [QuizController::class, 'duplicate'])->name('quizzes.duplicate');
+        Route::post('/quizzes/{quiz}/reset', [QuizController::class, 'resetStats'])->name('quizzes.reset'); 
+        Route::post('/quizzes/{quiz}/add-ai', [QuizController::class, 'addAiQuestions'])->name('quizzes.add_ai');
+        Route::get('/quizzes/{quiz}/analyze', [QuizController::class, 'analyze'])->name('quizzes.analyze');
+        Route::delete('/questions/{question}', [QuizController::class, 'destroyQuestion'])->name('questions.destroy');
 
         Route::get('/quizzes/{quiz}/leaderboard', [QuizController::class, 'leaderboard'])->name('quizzes.leaderboard');
-        
-        Route::get('/join', [JoinQuizController::class, 'create'])->name('quizzes.join');
-        Route::post('/join', [JoinQuizController::class, 'store'])->name('quizzes.join.store');
-        Route::get('/join-quiz', [JoinQuizController::class, 'create'])->name('quizzes.join.show');
-
-        Route::get('/quizzes/{quiz}/start', [QuizAttemptController::class, 'start'])->name('quizzes.start');
-        Route::post('/quizzes/{quiz}/start-attempt', [QuizAttemptController::class, 'start'])->name('quizzes.start.post');
-        
-        Route::get('/quizzes/{quiz}/attempt/{attempt}', [QuizAttemptController::class, 'show'])->name('quizzes.attempt');
-        Route::post('/quizzes/{quiz}/attempt/{attempt}', [QuizAttemptController::class, 'submit'])->name('quizzes.submit');
-        
         Route::get('/leaderboard', [QuizController::class, 'leaderboard'])->name('leaderboard');
     });
 
-    // Route Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Route Pembayaran (Midtrans) 
     Route::get('/payment/checkout', [PaymentController::class, 'checkout'])->name('payment.checkout');
     Route::get('/payment/success', [PaymentController::class, 'success'])->name('payment.success');
 });
-
-// Route Callback Midtrans 
-Route::post('/payment/callback', [PaymentController::class, 'callback']);
 
 require __DIR__.'/auth.php';

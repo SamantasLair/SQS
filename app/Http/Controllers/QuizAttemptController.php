@@ -8,107 +8,168 @@ use App\Models\Question;
 use App\Models\UserAnswer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class QuizAttemptController extends Controller
 {
     public function start(Request $request, Quiz $quiz)
     {
+        $userId = Auth::id();
+        $guestName = null;
+
+        if (!$userId) {
+            $guestName = session('guest_name');
+            if (!$guestName) {
+                return redirect()->route('quizzes.join')->with('error', 'Silakan masukkan nama Anda terlebih dahulu.');
+            }
+        }
+
+        $existingAttempt = QuizAttempt::where('quiz_id', $quiz->id)
+            ->where(function ($query) use ($userId, $guestName) {
+                if ($userId) {
+                    $query->where('user_id', $userId);
+                } else {
+                    $query->where('guest_name', $guestName);
+                }
+            })
+            ->whereNull('completed_at')
+            ->first();
+
+        if ($existingAttempt) {
+            if ($this->hasTimeExpired($existingAttempt, $quiz)) {
+                $this->finishAttempt($existingAttempt);
+                return redirect()->route('quizzes.leaderboard', $quiz);
+            }
+            return redirect()->route('quizzes.attempt', ['quiz' => $quiz->id, 'attempt' => $existingAttempt->id]);
+        }
+
         $attempt = QuizAttempt::create([
-            'user_id' => Auth::id(),
+            'user_id' => $userId,
+            'guest_name' => $guestName,
             'quiz_id' => $quiz->id,
+            'started_at' => now(),
         ]);
 
-        $questionIds = $quiz->questions()->pluck('id')->shuffle();
-
-        $request->session()->put('quiz_attempt', [
-            'attempt_id' => $attempt->id,
-            'question_ids' => $questionIds,
-            'current_question_index' => 0,
-        ]);
-
-        return redirect()->route('attempt.question.show', ['attempt' => $attempt->id]);
+        return redirect()->route('quizzes.attempt', ['quiz' => $quiz->id, 'attempt' => $attempt->id]);
     }
 
-    public function showQuestion(Request $request, QuizAttempt $attempt)
+    public function retake(Request $request, Quiz $quiz)
     {
-        $sessionData = $this->getSessionData($request, $attempt);
-        if (!$sessionData) {
-            return redirect()->route('dashboard')->with('error', 'Sesi kuis tidak ditemukan.');
+        $userId = Auth::id();
+        $guestName = session('guest_name');
+
+        if (!$userId && !$guestName) {
+            return redirect()->route('quizzes.join');
         }
 
-        $questionId = $sessionData['question_ids'][$sessionData['current_question_index']];
-        $question = Question::with('options')->findOrFail($questionId);
+        $existingAttempts = QuizAttempt::where('quiz_id', $quiz->id)
+            ->where(function ($query) use ($userId, $guestName) {
+                if ($userId) {
+                    $query->where('user_id', $userId);
+                } else {
+                    $query->where('guest_name', $guestName);
+                }
+            })
+            ->get();
 
-        $progress = ($sessionData['current_question_index'] + 1) . " / " . count($sessionData['question_ids']);
+        foreach ($existingAttempts as $attempt) {
+            $attempt->delete();
+        }
 
-        return view('quizzes.attempt.show', compact('attempt', 'question', 'progress'));
+        return $this->start($request, $quiz);
     }
 
-    public function storeAnswer(Request $request, QuizAttempt $attempt)
+    public function show(Request $request, Quiz $quiz, QuizAttempt $attempt)
     {
-        $request->validate(['option_id' => 'required|integer']);
+        if (Auth::check() && $attempt->user_id !== Auth::id()) abort(403);
+        if (!Auth::check() && $attempt->guest_name !== session('guest_name')) abort(403);
 
-        $sessionData = $this->getSessionData($request, $attempt);
-        if (!$sessionData) {
-            return redirect()->route('dashboard')->with('error', 'Sesi kuis tidak ditemukan.');
+        if ($attempt->completed_at) {
+            return redirect()->route('quizzes.leaderboard', $quiz);
         }
 
-        $questionId = $sessionData['question_ids'][$sessionData['current_question_index']];
-
-        UserAnswer::create([
-            'quiz_attempt_id' => $attempt->id,
-            'question_id' => $questionId,
-            'option_id' => $request->option_id,
-        ]);
-
-        $sessionData['current_question_index']++;
-        $request->session()->put('quiz_attempt', $sessionData);
-
-        if ($sessionData['current_question_index'] < count($sessionData['question_ids'])) {
-            return redirect()->route('attempt.question.show', ['attempt' => $attempt->id]);
-        } else {
-            return redirect()->route('attempt.result', ['attempt' => $attempt->id]);
+        if ($this->hasTimeExpired($attempt, $quiz)) {
+            return $this->finishAttempt($attempt);
         }
+
+        return view('quizzes.attempt.show', compact('quiz', 'attempt'));
     }
 
-    public function showResult(Request $request, QuizAttempt $attempt)
+    public function submit(Request $request, Quiz $quiz, QuizAttempt $attempt)
     {
-        if ($attempt->user_id !== Auth::id()) {
-            abort(403);
+        if (Auth::check() && $attempt->user_id !== Auth::id()) abort(403);
+        
+        if ($attempt->completed_at) {
+            return redirect()->route('quizzes.leaderboard', $quiz);
         }
 
+        if ($this->hasTimeExpired($attempt, $quiz)) {
+            return $this->finishAttempt($attempt);
+        }
+
+        $rawAnswers = $request->input('answers', []);
+        
+        foreach ($quiz->questions as $question) {
+            $value = $rawAnswers[$question->id] ?? null;
+            
+            if (!$value) continue;
+
+            $isCorrect = false;
+            $optionId = null;
+            $essayAns = null;
+
+            if ($question->question_type === 'multiple_choice') {
+                $optionId = $value;
+                $opt = $question->options()->find($optionId);
+                if ($opt && $opt->is_correct) {
+                    $isCorrect = true;
+                }
+            } else {
+                $essayAns = $value;
+            }
+
+            UserAnswer::updateOrCreate(
+                [
+                    'quiz_attempt_id' => $attempt->id,
+                    'question_id' => $question->id
+                ],
+                [
+                    'option_id' => $optionId,
+                    'essay_answer' => $essayAns,
+                    'is_correct' => $isCorrect
+                ]
+            );
+        }
+
+        return $this->finishAttempt($attempt);
+    }
+
+    private function hasTimeExpired(QuizAttempt $attempt, Quiz $quiz)
+    {
+        $limit = Carbon::parse($attempt->created_at)->addMinutes($quiz->timer)->addSeconds(10);
+        return now()->greaterThan($limit);
+    }
+
+    private function finishAttempt(QuizAttempt $attempt)
+    {
         $totalQuestions = $attempt->quiz->questions->count();
         $correctAnswers = 0;
 
-        $userAnswers = UserAnswer::where('quiz_attempt_id', $attempt->id)
-            ->with('option')
-            ->get();
+        $userAnswers = UserAnswer::where('quiz_attempt_id', $attempt->id)->get();
 
         foreach ($userAnswers as $answer) {
-            if ($answer->option && $answer->option->is_correct) {
+            if ($answer->is_correct) {
                 $correctAnswers++;
             }
         }
 
         $score = ($totalQuestions > 0) ? ($correctAnswers / $totalQuestions) * 100 : 0;
 
-        $attempt->update(['score' => $score]);
-        
-        $request->session()->forget('quiz_attempt');
+        $attempt->update([
+            'score' => $score,
+            'completed_at' => now(),
+        ]);
 
-        return view('quizzes.attempt.result', compact('attempt', 'score', 'totalQuestions', 'correctAnswers'));
-    }
-
-    private function getSessionData(Request $request, QuizAttempt $attempt)
-    {
-        $sessionData = $request->session()->get('quiz_attempt');
-
-        if (!$sessionData || $sessionData['attempt_id'] != $attempt->id || $attempt->user_id !== Auth::id()) {
-            $request->session()->forget('quiz_attempt');
-            return null;
-        }
-
-        return $sessionData;
+        return redirect()->route('quizzes.leaderboard', $attempt->quiz_id)->with('success', 'Kuis Selesai!');
     }
 }

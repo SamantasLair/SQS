@@ -1,47 +1,54 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-bold text-xl text-gray-800 leading-tight">
-            Upgrade Premium
-        </h2>
-    </x-slot>
-
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 text-center">
-                <h3 class="text-2xl font-bold mb-4">Langganan SQS Premium</h3>
-                <p class="mb-6">Dapatkan akses unlimited AI Generator hanya dengan Rp {{ number_format($amount) }}</p>
-                
-                <button id="pay-button" class="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 transition">
-                    Bayar Sekarang
-                </button>
-            </div>
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Checkout - SQS</title>
+    <script type="text/javascript"
+            src="https://app.sandbox.midtrans.com/snap/snap.js"
+            data-client-key="{{ config('midtrans.client_key') }}"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+    <div class="text-center">
+        <h1 class="text-2xl font-bold mb-4">Memproses Pembayaran...</h1>
+        <p class="text-gray-400">Mohon tunggu, popup pembayaran akan segera muncul.</p>
+        
+        <div class="mt-8">
+            <button id="pay-button" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-bold transition-all">
+                Bayar Sekarang
+            </button>
+        </div>
+        
+        <div class="mt-4">
+            <a href="{{ route('pricing.index') }}" class="text-sm text-gray-500 hover:text-gray-300">Batalkan</a>
         </div>
     </div>
 
-    <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}"></script>
     <script type="text/javascript">
-        document.getElementById('pay-button').onclick = function(){
-            snap.pay('{{ $snapToken }}', {
-                // Saat sukses bayar di popup
+        var payButton = document.getElementById('pay-button');
+        
+        function triggerPayment() {
+            window.snap.pay('{{ $snapToken }}', {
                 onSuccess: function(result){
-                    // Redirect ke fungsi success di controller dengan membawa Order ID
-                    window.location.href = "{{ route('payment.success') }}?order_id=" + result.order_id;
+                    window.location.href = "{{ route('payment.success') }}";
                 },
-                // Saat status pending
                 onPending: function(result){
-                    alert("Menunggu pembayaran!");
-                    // Opsional: Redirect juga ke success untuk cek status pending
-                    // window.location.href = "{{ route('payment.success') }}?order_id=" + result.order_id;
+                    window.location.href = "{{ route('dashboard') }}";
                 },
-                // Saat error
                 onError: function(result){
                     alert("Pembayaran gagal!");
+                    window.location.href = "{{ route('pricing.index') }}";
                 },
-                // Saat popup ditutup manual
                 onClose: function(){
-                    alert('Anda menutup popup pembayaran sebelum menyelesaikan transaksi');
+                    alert('Anda menutup popup pembayaran.');
                 }
             });
-        };
+        }
+
+        payButton.addEventListener('click', triggerPayment);
+
+        setTimeout(triggerPayment, 1000);
     </script>
-</x-app-layout>
+</body>
+</html>

@@ -1,224 +1,109 @@
 # SQS - Smart Quiz System
 
-SQS (Smart Quiz System) adalah platform kuis online berbasis web yang dibangun dengan Laravel, dirancang untuk memfasilitasi pembuatan, pengelolaan, dan partisipasi dalam kuis interaktif. Platform ini menawarkan fitur-fitur canggih seperti pembuatan kuis dengan AI, sistem langganan premium, verifikasi akademik, dan panel admin yang komprehensif.
+SQS adalah platform manajemen kuis berbasis web yang dibangun menggunakan framework **Laravel**. Aplikasi ini dirancang untuk memungkinkan pengguna membuat, membagikan, dan mengerjakan kuis dengan fitur-fitur canggih seperti bantuan AI, sistem pembayaran, dan verifikasi akademik.
 
 ## 🚀 Fitur Utama
 
-### 👤 Sistem Pengguna
-- **Registrasi dan Login**: Sistem autentikasi lengkap dengan verifikasi email
-- **Login Google**: Integrasi OAuth dengan Google untuk kemudahan akses
-- **Manajemen Profil**: Pengguna dapat mengupdate informasi pribadi
-- **Sistem Role**: User biasa, Pro, Premium, dan Academic
+* **Manajemen Kuis**: Membuat, mengedit, dan menghapus kuis dengan berbagai opsi pertanyaan.
+* **Integrasi AI (Google Gemini)**: Menggunakan `GeminiService` untuk pembuatan soal otomatis atau analisis jawaban/hasil kuis.
+* **Sistem Membership & Premium**: Batasan penggunaan AI dan fitur premium untuk pengguna berbayar.
+* **Gateway Pembayaran**: Integrasi dengan **Midtrans** untuk memproses transaksi berlangganan.
+* **Verifikasi Akademik**: Sistem verifikasi status pelajar/mahasiswa (`AcademicVerificationController`).
+* **Leaderboard**: Papan peringkat untuk melihat skor tertinggi pengguna lain.
+* **Role Management**: Panel khusus untuk Admin dan User biasa.
+* **Autentikasi Sosial**: Mendukung login/register menggunakan akun sosial (Google).
 
-### 📝 Manajemen Kuis
-- **Pembuatan Kuis**: Interface yang mudah untuk membuat kuis dengan berbagai jenis pertanyaan
-- **Pertanyaan AI**: Generate pertanyaan otomatis menggunakan Google Gemini AI
-- **Timer Kuis**: Pengaturan waktu untuk setiap kuis
-- **Kode Bergabung**: Sistem kode unik untuk bergabung ke kuis
-- **Duplikasi Kuis**: Salin kuis yang sudah ada untuk modifikasi
-- **Reset Statistik**: Reset data percobaan kuis
+## 🛠️ Teknologi yang Digunakan
 
-### 🎯 Sistem Percobaan Kuis
-- **Percobaan Kuis**: Sistem scoring real-time
-- **Riwayat Percobaan**: Tracking semua percobaan pengguna
-- **Retake Kuis**: Opsi untuk mengulang kuis
-- **Jawaban Essay**: Dukungan untuk pertanyaan essay
-- **Guest Mode**: Percobaan kuis tanpa akun (terbatas)
+* **Backend**: Laravel 11 (PHP)
+* **Frontend**: Blade Templates, Tailwind CSS, Alpine.js (via Laravel Breeze/Standard stack)
+* **Database**: MySQL
+* **AI**: Google Gemini API
+* **Payment**: Midtrans Payment Gateway
+* **Build Tool**: Vite
 
-### 💰 Sistem Pembayaran & Langganan
-- **Integrasi Midtrans**: Gateway pembayaran Indonesia
-- **Paket Langganan**: Pro, Premium, dan Academic
-- **Limit AI**: Batasan penggunaan fitur AI berdasarkan paket
-- **Manajemen Transaksi**: Tracking pembayaran dan status langganan
+## 📋 Prasyarat
 
-### 🎓 Verifikasi Akademik
-- **Upload Dokumen**: Upload ijazah atau sertifikat akademik
-- **Parsing PDF**: Ekstraksi data otomatis dari dokumen PDF
-- **Approval Sistem**: Admin dapat menyetujui atau menolak verifikasi
-- **Status Tracking**: Monitoring status verifikasi
+Sebelum memulai, pastikan Anda telah menginstal:
 
-### 👨‍💼 Panel Admin
-- **Dashboard Admin**: Overview lengkap sistem
-- **Manajemen User**: CRUD pengguna dengan kontrol role
-- **Manajemen Kuis**: Moderasi dan pengelolaan kuis
-- **Verifikasi Akademik**: Review dokumen akademik
-- **Statistik Sistem**: Analytics dan reporting
+* PHP >= 8.2
+* Composer
+* Node.js & NPM
+* MySQL
 
-### 📊 Analytics & Leaderboard
-- **Leaderboard**: Peringkat berdasarkan skor
-- **Analisis Kuis**: Statistik detail performa kuis
-- **Dashboard User**: Ringkasan aktivitas pribadi
-- **Popular Quizzes**: Kuis paling banyak diikuti
+## ⚙️ Instalasi
 
-## 🛠️ Tech Stack
+Ikuti langkah-langkah berikut untuk menjalankan proyek di komputer lokal Anda:
 
-### Backend
-- **Laravel 12**: Framework PHP modern
-- **PHP 8.2+**: Bahasa pemrograman utama
-- **MySQL**: Database utama
-- **Redis**: Caching dan session storage
+1.  **Clone Repositori**
+    ```bash
+    git clone [https://github.com/username/sqs1.git](https://github.com/username/sqs1.git)
+    cd sqs1
+    ```
 
-### Frontend
-- **Blade Templates**: Template engine Laravel
-- **Tailwind CSS**: Framework CSS utility-first
-- **Alpine.js**: JavaScript framework untuk interaktivitas
-- **Vite**: Build tool dan development server
+2.  **Install Dependensi PHP**
+    ```bash
+    composer install
+    ```
 
-### Integrasi & Layanan
-- **Google Gemini AI**: Generate pertanyaan otomatis
-- **Midtrans**: Gateway pembayaran
-- **Google OAuth**: Autentikasi sosial
-- **PDF Parser**: Ekstraksi data dari PDF
+3.  **Install Dependensi Frontend**
+    ```bash
+    npm install
+    ```
 
-### Development Tools
-- **Composer**: Dependency management PHP
-- **NPM**: Package management JavaScript
-- **Pest**: Testing framework
-- **Laravel Sail**: Development environment
+4.  **Konfigurasi Environment**
+    Salin file contoh `.env` dan buat konfigurasi baru:
+    ```bash
+    cp .env.example .env
+    ```
 
-## 📋 Prasyarat Sistem
+5.  **Generate App Key**
+    ```bash
+    php artisan key:generate
+    ```
 
-- PHP 8.2 atau lebih tinggi
-- Composer
-- Node.js & NPM
-- MySQL 8.0+
-- Redis (opsional, untuk caching)
+6.  **Konfigurasi Database & API**
+    Buka file `.env` dan sesuaikan pengaturan berikut:
 
-## 🚀 Instalasi & Setup
+    ```env
+    DB_CONNECTION=mysql
+    DB_HOST=127.0.0.1
+    DB_PORT=3306
+    DB_DATABASE=nama_database_anda
+    DB_USERNAME=root
+    DB_PASSWORD=
 
-### 1. Clone Repository
-```bash
-git clone <repository-url>
-cd sqs
-```
+    # Konfigurasi Midtrans (Pembayaran)
+    MIDTRANS_MERCHANT_ID=your_merchant_id
+    MIDTRANS_CLIENT_KEY=your_client_key
+    MIDTRANS_SERVER_KEY=your_server_key
+    MIDTRANS_IS_PRODUCTION=false
 
-### 2. Install Dependencies PHP
-```bash
-composer install
-```
+    # Konfigurasi Google Gemini AI
+    GEMINI_API_KEY=your_gemini_api_key
 
-### 3. Install Dependencies JavaScript
-```bash
-npm install
-```
+    # Konfigurasi Google OAuth (Opsional)
+    GOOGLE_CLIENT_ID=your_google_client_id
+    GOOGLE_CLIENT_SECRET=your_google_client_secret
+    GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
+    ```
 
-### 4. Environment Setup
-```bash
-cp .env.example .env
-```
+7.  **Migrasi Database**
+    Jalankan migrasi untuk membuat tabel yang diperlukan (termasuk tabel quizzes, questions, transactions, dll):
+    ```bash
+    php artisan migrate
+    # Sertakan juga data dummy nya
+    php artisan migrate --seed
+    ```
 
-Edit file `.env` dengan konfigurasi database dan layanan eksternal yang diperlukan (lihat file `.env.example` untuk referensi).
+8.  **Build Assets**
+    ```bash
+    npm run build
+    ```
 
-### 5. Generate Application Key
-```bash
-php artisan key:generate
-```
+## ▶️ Menjalankan Aplikasi
 
-### 6. Database Setup
-```bash
-php artisan migrate
-php artisan db:seed
-```
+Jalankan server lokal Laravel:
 
-### 7. Build Assets
-```bash
-npm run build
-# atau untuk development
-npm run dev
-```
-
-### 8. Jalankan Aplikasi
 ```bash
 php artisan serve
-```
-
-Atau gunakan Laravel Sail untuk environment lengkap:
-```bash
-./vendor/bin/sail up
-```
-
-## 📖 Panduan Penggunaan
-
-### Untuk User Biasa
-1. **Registrasi**: Daftar akun baru atau login dengan Google
-2. **Bergabung Kuis**: Masukkan kode kuis untuk bergabung
-3. **Ikuti Kuis**: Jawab pertanyaan dalam waktu yang ditentukan
-4. **Lihat Hasil**: Cek skor dan analisis performa
-
-### Untuk Creator Kuis
-1. **Buat Kuis**: Akses menu "Create Quiz" di dashboard
-2. **Tambah Pertanyaan**: Tambahkan pertanyaan manual atau generate dengan AI
-3. **Konfigurasi**: Set timer, deskripsi, dan pengaturan lainnya
-4. **Bagikan Kode**: Berikan kode bergabung ke peserta
-
-### Untuk Admin
-1. **Login sebagai Admin**: Gunakan akun dengan role admin
-2. **Kelola User**: Approve/reject user, ubah role
-3. **Moderasi Kuis**: Review dan manage kuis yang dibuat user
-4. **Verifikasi Akademik**: Approve dokumen akademik
-
-## 🔧 Struktur Database
-
-### Tabel Utama
-- **users**: Data pengguna dan role
-- **quizzes**: Informasi kuis
-- **questions**: Pertanyaan dalam kuis
-- **options**: Pilihan jawaban
-- **quiz_attempts**: Percobaan kuis oleh user
-- **user_answers**: Jawaban user
-- **transactions**: Data pembayaran
-- **academic_verifications**: Data verifikasi akademik
-
-## 🧪 Testing
-
-Jalankan test suite:
-```bash
-php artisan test
-```
-
-Atau dengan Pest:
-```bash
-./vendor/bin/pest
-```
-
-## 📦 Deployment
-
-### Production Setup
-1. Set `APP_ENV=production` di `.env`
-2. Konfigurasi web server (Apache/Nginx)
-3. Setup SSL certificate
-4. Konfigurasi queue worker untuk background jobs
-5. Setup cron job untuk scheduled tasks
-
-
-
-## 🤝 Contributing
-
-1. Fork repository
-2. Buat branch fitur baru (`git checkout -b feature/AmazingFeature`)
-3. Commit perubahan (`git commit -m 'Add some AmazingFeature'`)
-4. Push ke branch (`git push origin feature/AmazingFeature`)
-5. Buat Pull Request
-
-## 📝 License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
-## 📞 Support
-
-Untuk pertanyaan atau dukungan, silakan hubungi tim development atau buat issue di repository ini.
-
-## 🔄 Changelog
-
-### v1.0.0
-- Initial release
-- Basic quiz functionality
-- User authentication
-- Admin panel
-- Payment integration
-- AI question generation
-- Academic verification
-
----
-
-**Dibangun dengan ❤️ menggunakan Laravel Framework**

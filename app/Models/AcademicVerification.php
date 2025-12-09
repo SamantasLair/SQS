@@ -2,26 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Transaction extends Model
+class AcademicVerification extends Model
 {
-    use HasFactory, HasUuids;
+    use HasUuids;
 
     protected $fillable = [
         'user_id',
-        'order_id',
-        'amount',
+        'institution_name',
+        'id_number',
+        'document_path',
         'status',
-        'snap_token',
-        'metadata',
-    ];
-
-    protected $casts = [
-        'metadata' => 'array',
+        'admin_notes',
     ];
 
     public function user(): BelongsTo
