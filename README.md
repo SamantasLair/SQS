@@ -1,6 +1,6 @@
-# **SQS \- Smart Quiz System**
+# **SQS \- Sistem Quiz Semalam**
 
-SQS (Smart Quiz System) adalah platform manajemen kuis berbasis web modern yang dibangun menggunakan framework **Laravel 10**. Aplikasi ini dirancang untuk merevolusi cara pembuatan dan pengerjaan kuis dengan integrasi **Kecerdasan Buatan (AI)**, sistem pembayaran digital, dan verifikasi akademik otomatis.
+SQS (Sistem Quiz Semalam) adalah platform manajemen kuis berbasis web modern yang dibangun menggunakan framework **Laravel 10**. Aplikasi ini dirancang untuk merevolusi cara pembuatan dan pengerjaan kuis dengan integrasi **Kecerdasan Buatan (AI)**, sistem pembayaran digital, dan verifikasi akademik otomatis untuk pembelajaran yang interaktif dan cepat.
 
 ## **🚀 Fitur Utama**
 
